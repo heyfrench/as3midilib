@@ -5,6 +5,7 @@ This is a library for working with MIDI in ActionScript 3.0. It can be manually 
 
 ## Receiving live performance MIDI
 
+```as3
 	import com.newgonzo.midi.io.*;
 	import com.newgonzo.midi.*;
 	import com.newgonzo.midi.events.*;
@@ -39,10 +40,11 @@ This is a library for working with MIDI in ActionScript 3.0. It can be manually 
 	{
 	  trace(event.message); // [Message(status=...]
 	}
-
+```
 
 ## Syncing to MIDI clock
 
+```as3
 	import com.newgonzo.midi.io.*;
 	import com.newgonzo.midi.messages.*;
 	import com.newgonzo.midi.events.*;
@@ -59,10 +61,11 @@ This is a library for working with MIDI in ActionScript 3.0. It can be manually 
 	connection.connect("127.0.0.1", 10000);
 
 	// event handling functions
-
+```
 
 ## Reading a MIDI file
 
+```as3
 	import com.newgonzo.midi.MIDIDecoder;
 	import com.newgonzo.midi.file.*;
 
@@ -85,3 +88,4 @@ This is a library for working with MIDI in ActionScript 3.0. It can be manually 
 	        trace("event.message: " + event.message); // [Message(status=...]
 	    }
 	}
+```
