@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" creationComplete="creationComplete();" width="50" height="20">
+	<mx:Script>
+		<![CDATA[
+			import mx.core.UIComponent;
+			
+			private var left:Sprite;
+			private var right:Sprite;
+			
+			public function tick():void
+			{
+				left.getChildByName("fill").visible = !left.getChildByName("fill").visible;
+				right.getChildByName("fill").visible = !right.getChildByName("fill").visible;
+			}
+			
+			protected function creationComplete():void
+			{
+				left = createCircle();
+				right = createCircle();
+				
+				right.x = left.x + left.width + 10;
+				
+				var sprites:UIComponent = new UIComponent();
+				
+				sprites.addChild(left);
+				sprites.addChild(right);
+				
+				container.addChild(sprites);
+				
+				right.getChildByName("fill").visible = false;
+			}
+			
+			private function createCircle():Sprite
+			{
+				var circle:Sprite = new Sprite();
+				var outline:Sprite = new Sprite();
+				var fill:Sprite = new Sprite();
+				
+				fill.name = "fill";
+				
+				outline.graphics.lineStyle(1, 0x000000, 1);
+				outline.graphics.drawCircle(10, 10, 10);
+				
+				fill.graphics.beginFill(0x000000, 1);
+				fill.graphics.drawCircle(10, 10, 10);
+				
+				circle.addChild(fill);
+				circle.addChild(outline);
+				
+				return circle;
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:HBox id="container" width="100%" height="100%">
+	</mx:HBox>
+</mx:Canvas>

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute">
+	
+	<mx:Script>
+		<![CDATA[
+			import com.newgonzo.midi.file.messages.MetaEventMessageType;
+			import mx.controls.Label;
+			import com.newgonzo.midi.file.messages.TextMessage;
+			import com.newgonzo.midi.messages.Message;
+			import mx.core.UIComponent;
+			import com.newgonzo.midi.messages.VoiceMessage;
+			import com.newgonzo.midi.messages.MessageStatus;
+			import com.newgonzo.midi.file.MIDITrackEvent;
+			import mx.containers.Box;
+			import mx.containers.Canvas;
+			import com.newgonzo.midi.file.MIDITrack;
+			import com.newgonzo.midi.file.MIDIFile;
+			import com.newgonzo.midi.MIDIDecoder;
+			
+			private var fileRef:FileReference;
+			
+			private var midiData:ByteArray;
+			
+			private var loader:URLLoader;
+			
+			public function browseForMidi():void
+			{
+				fileRef = new FileReference();
+				fileRef.browse([new FileFilter("MIDI Files", "*.mid;*.midi")]);
+				fileRef.addEventListener(Event.COMPLETE, handleFileLoad);
+				fileRef.addEventListener(Event.SELECT, handleFileSelect);
+			}
+			
+			public function loadMidi():void
+			{
+				loader = new URLLoader();
+				loader.dataFormat = URLLoaderDataFormat.BINARY;
+				loader.addEventListener(Event.COMPLETE, handleLoadComplete);
+				//loader.addEventListener(IOErrorEvent.IO_ERROR, function(e:Event){ trace(e);});
+				//loader.load(new URLRequest(urlInput.text));
+			}
+			
+			private function handleLoadComplete(event:Event):void
+			{
+				midiData = loader.data as ByteArray;
+				decodeMidi();
+			}
+			
+			private function handleFileSelect(event:Event):void
+			{
+				fileRef.load();
+			}
+			
+			private function handleFileLoad(event:Event):void
+			{
+				midiData = fileRef.data;
+				decodeMidi();
+			}
+			
+			private function decodeMidi():void
+			{
+				var decoder:MIDIDecoder = new MIDIDecoder();
+				var file:MIDIFile = decoder.decodeFile(midiData);
+				
+				var text:File = File.desktopDirectory.resolvePath("midifileoutput.txt");
+				var ba:ByteArray = new ByteArray();
+				ba.writeUTFBytes(file.toString());
+				
+				var fs:FileStream = new FileStream();
+				fs.open(text, FileMode.WRITE);
+				fs.writeBytes(ba, 0, ba.length);
+				fs.close();
+				
+				openFile(file);
+			}
+			
+			private function openFile(file:MIDIFile):void
+			{
+				var track:MIDITrack;
+				
+				tracks.removeAllChildren();
+				
+				for each(track in file.tracks)
+				{
+					addTrack(file, track);
+				}
+			}
+			
+			private function addTrack(file:MIDIFile, track:MIDITrack):void
+			{
+				var timeline:Canvas = new Canvas();
+				timeline.percentWidth = 100;
+				timeline.height = 100;
+				
+				timeline.setStyle("backgroundColor", Math.round(Math.random() * 0xFFFFFF));
+				
+				tracks.addChild(timeline);
+				
+				var noteLayer:UIComponent = new UIComponent();
+				var textLayer:UIComponent = new UIComponent();
+				
+				timeline.addChild(noteLayer);
+				timeline.addChild(textLayer);
+				
+				var event:MIDITrackEvent;
+				var message:Message;
+				var text:TextMessage;
+				
+				var label:Label;
+				var eventX:Number;
+				var voice:VoiceMessage;
+				
+				for each(event in track.events)
+				{
+					message = event.message;
+					
+					eventX = event.time / (file.division / 20);
+
+					if(message is TextMessage)
+					{
+						text = message as TextMessage;
+						
+						if(text.type != MetaEventMessageType.TRACK_NAME) continue;
+						
+						label = new Label();
+						label.width = 300;
+						label.height = 30;
+						label.setStyle("color", 0xFFFFFF);
+						label.text = text.text;
+						
+						label.x = eventX;
+						label.y = 10;
+						textLayer.addChild(label);
+					}
+					else if(message is VoiceMessage)
+					{
+						voice = message as VoiceMessage;
+						
+						if(voice.velocity > 0)
+						{
+							noteLayer.graphics.lineStyle(1, 0);
+							noteLayer.graphics.moveTo(eventX, timeline.height - voice.pitch);
+							noteLayer.graphics.lineTo(eventX, (timeline.height - voice.pitch) + 5);
+						}
+					}
+				}
+				
+				timeline.width = eventX;
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:ApplicationControlBar dock="true">
+		<!--<mx:TextInput id="urlInput"/>
+		<mx:Button label="Load" click="loadMidi();"/>-->
+		<mx:Spacer width="100%"/>
+		<mx:Button label="Browse" click="browseForMidi();"/>
+	</mx:ApplicationControlBar>
+	
+	<mx:VBox id="tracks" height="100%" width="100%">
+		
+	</mx:VBox>
+	
+</mx:WindowedApplication>

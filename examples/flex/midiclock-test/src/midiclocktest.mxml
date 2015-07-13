@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" creationComplete="creationComplete();" xmlns:display="com.newgonzo.midi.display.*">
+
+	<mx:Script>
+		<![CDATA[
+			import com.newgonzo.midi.MIDIClock;
+			import com.newgonzo.midi.io.MIDISocketConnection;
+			import com.newgonzo.midi.events.MessageEvent;
+			import com.newgonzo.midi.events.ClockEvent;
+			import com.newgonzo.midi.filters.ChannelFilter;
+			import com.newgonzo.midi.filters.SystemFilter;
+			import com.newgonzo.midi.MIDIReceiver;
+			
+			[Bindable] public var isConnected:Boolean = false;
+			[Bindable] public var tempo:int = 0;
+			[Bindable] public var beat:int = 0;
+			[Bindable] public var status:String;
+			
+			private var connection:MIDISocketConnection;
+			private var clock:MIDIClock;
+			private var voice:MIDIReceiver;
+			
+			protected function creationComplete():void
+			{
+				connection = new MIDISocketConnection();
+				
+				connection.addEventListener(Event.CONNECT, midiConnected);
+				connection.addEventListener(Event.CLOSE, midiClosed);
+				
+				connection.addEventListener(MessageEvent.MESSAGE, messageReceived);
+				
+				//voice.addEventListener(MIDIEvent.MESSAGE, messageReceived);
+				
+				clock = new MIDIClock(connection, MIDIClock.QUARTERS);
+				clock.addEventListener(ClockEvent.BEAT, midiBeat);
+				clock.addEventListener(ClockEvent.POSITION, midiPosition);
+				clock.addEventListener(ClockEvent.START, midiStartStop);
+				clock.addEventListener(ClockEvent.STOP, midiStartStop);
+				
+				updateStatus();
+			}
+			
+			protected function connect():void
+			{
+				connection.connect(host.text, uint(port.text));
+			}
+			
+			protected function disconnect():void
+			{
+				connection.close();
+			}
+			
+			protected function updateStatus():void
+			{
+				status = clock.stopped ? "stopped" : "playing";
+			}
+			
+			private function messageReceived(event:MessageEvent):void
+			{
+				//trace(event.message);
+			}
+			
+			private function midiConnected(event:Event):void
+			{
+				isConnected = connection.connected;
+			}
+			
+			private function midiClosed(event:Event):void
+			{
+				isConnected = connection.connected;
+			}
+			
+			private function midiBeat(event:ClockEvent):void
+			{
+				tempo = int(Math.round(clock.tempo));
+				beat = clock.beat;
+				metro.tick();
+			}
+			
+			private function midiPosition(event:ClockEvent):void
+			{
+				beat = clock.beat;
+			}
+			
+			private function midiStartStop(event:ClockEvent):void
+			{
+				updateStatus();
+			}
+		]]>
+	</mx:Script>
+
+	<mx:ApplicationControlBar dock="true">
+		<mx:Label text="Host"/>
+		<mx:TextInput id="host" text="localhost" enabled="{!isConnected}"/>
+		<mx:Label text="Port"/>
+		<mx:TextInput id="port" text="10000" enabled="{!isConnected}"/>
+		<mx:Button label="Connect" click="connect();" enabled="{!isConnected}"/>
+		<mx:Button label="Disconnect" click="disconnect();" enabled="{isConnected}"/>
+		<mx:Spacer width="100%"/>
+		<mx:Text text="{'Status: ' + status}"/>
+		<mx:Text text="{'Beat: ' + beat}"/>
+		<mx:Text text="{'Tempo: ' + tempo}"/>
+		<display:MetronomeDisplay id="metro"/>
+	</mx:ApplicationControlBar>
+	<mx:Spacer height="100%"/>
+	<mx:LinkButton fontSize="10" id="mem" click="System.gc();" toolTip="Click to run garbage collector (debug player only)" render="mem.label = 'Memory used: ' + Math.round((System.totalMemory / 1024 / 1024) * 100) / 100 + ' MB'"/>
+</mx:Application>
